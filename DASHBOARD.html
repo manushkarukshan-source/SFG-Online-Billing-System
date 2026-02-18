@@ -135,7 +135,7 @@
         <h2>SFG Cloud Dashboard</h2>
         <div>
             <button onclick="fetchCloudData()" style="padding: 8px; font-size: 12px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 4px; margin-right: 10px;">🔄 Refresh Cloud</button>
-            <a href="Sys files/QUOTATION.html" class="btn-back">+ New Quote</a>
+            <a href="Sys Files/QUOTATION.html" class="btn-back">+ New Quote</a>
             <a href="index.html" class="btn-home">🏠 Home</a>
         </div>
     </div>
@@ -227,7 +227,7 @@
                             <p>${quote.quoteNo || ''}</p>
                             <span class="price">${quote.total}</span>
                         </div>
-                        <img src="Sys files/image/quoteicon.png" class="quote-icon">
+                        <img src="Sys Files/image/quoteicon.png" class="quote-icon">
                     </div>
                     <div class="card-footer">
                         <button class="btn-view" onclick="viewQuote(${quote.id})">👁️ View</button>
@@ -272,7 +272,7 @@
         }
     }
 
-    function viewQuote(id) { window.location.href = `Sys files/QUOTATION.html?edit=${id}`; }
+    function viewQuote(id) { window.location.href = `Sys Files/QUOTATION.html?edit=${id}`; }
 
     // දත්ත මැකීම දැනට Local පමණි, Cloud එකෙන් මැකීමට Script එකේ Delete function එකක් තිබිය යුතුය
     function deleteQuoteById(id) {
@@ -287,5 +287,6 @@
 </script>
 </body>
 </html>
+
 
 
