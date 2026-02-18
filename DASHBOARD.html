@@ -159,23 +159,20 @@
 
 <script>
     // --- මෙහි ඔබගේ Google Script URL එක ඇතුළත් කරන්න ---
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJlNxCcC_Zj3OAg4uHP9VuzqvH9npQs_qHnB1349gjiW-5zO7-lbr9rph1-Ug_yovq1g/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxgT-XnC7vwMBeAglrjnS1ud82lsHvy-BQKaygYTos9SQhXPL2uj6L3dNa9sp_kji0Xvg/exec";
 
     let cloudQuotes = [];
 
-    // Cloud එකෙන් දත්ත ලබාගැනීම (GET Request)
     async function fetchCloudData() {
         document.getElementById('loading-overlay').style.display = 'flex';
         try {
             const response = await fetch(SCRIPT_URL);
             const data = await response.json();
             cloudQuotes = data;
-            // Local Storage එකත් Update කරනවා (offline වැඩ කිරීමට අවශ්‍ය නම්)
             localStorage.setItem('sfg_quotes', JSON.stringify(data));
             displayQuotes();
         } catch (error) {
             console.error("Error fetching data:", error);
-            // Cloud එක වැඩ නැත්නම් Local Storage එකෙන් පෙන්වනවා
             cloudQuotes = JSON.parse(localStorage.getItem('sfg_quotes')) || [];
             displayQuotes();
         } finally {
@@ -188,7 +185,6 @@
         const sortVal = document.getElementById('sortSelect').value;
         grid.innerHTML = '';
 
-        // Sorting
         cloudQuotes.sort((a, b) => {
             if (sortVal === 'date') return new Date(b.date) - new Date(a.date);
             if (sortVal === 'price') {
@@ -247,7 +243,6 @@
 
     function updateSummary() {
         let stats = { send: 0, pending: 0, completed: 0, paid: 0, sTotal: 0, pTotal: 0, cTotal: 0, paidTotal: 0 };
-
         cloudQuotes.forEach(q => {
             const price = parseFloat(String(q.total).replace(/[^0-9.-]+/g,"")) || 0;
             if (q.isSend) { stats.send++; stats.sTotal += price; }
@@ -255,7 +250,6 @@
             if (q.isCompleted) { stats.completed++; stats.cTotal += price; }
             if (q.isPaid) { stats.paid++; stats.paidTotal += price; }
         });
-
         const fmt = (v) => v.toLocaleString(undefined, {minimumFractionDigits: 2});
         document.getElementById('count-send').innerText = `${stats.send} | ${fmt(stats.sTotal)}`;
         document.getElementById('count-pending').innerText = `${stats.pending} | ${fmt(stats.pTotal)}`;
@@ -273,12 +267,28 @@
 
     function viewQuote(id) { window.location.href = `Sys Files/QUOTATION.html?edit=${id}`; }
 
-    // දත්ත මැකීම දැනට Local පමණි, Cloud එකෙන් මැකීමට Script එකේ Delete function එකක් තිබිය යුතුය
-    function deleteQuoteById(id) {
-        if(confirm("මකා දැමීමට අවශ්‍යද?")) {
-            cloudQuotes = cloudQuotes.filter(q => q.id !== id);
-            localStorage.setItem('sfg_quotes', JSON.stringify(cloudQuotes));
-            displayQuotes();
+    // Cloud එකෙන් දත්ත මැකීම සඳහා නව ශ්‍රිතය
+    async function deleteQuoteById(id) {
+        if(confirm("මෙම සටහන Cloud එකෙන් ස්ථිරවම මකා දැමීමට අවශ්‍යද?")) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                // මෙහිදී Cloud එකට 'action=delete' සහ 'id' යවනු ලැබේ
+                const response = await fetch(`${SCRIPT_URL}?action=delete&id=${id}`);
+                const res = await response.json();
+                
+                if(res.status === "success") {
+                    cloudQuotes = cloudQuotes.filter(q => q.id !== id);
+                    localStorage.setItem('sfg_quotes', JSON.stringify(cloudQuotes));
+                    displayQuotes();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            } catch (error) {
+                console.error("Delete failed:", error);
+                alert("Cloud එකට සම්බන්ධ වීමට නොහැක!");
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
         }
     }
 
