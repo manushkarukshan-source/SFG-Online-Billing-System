@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shehani Fiberglass - Delivery Order System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; margin: 0; background-color: white; }
+            .print-wrapper { width: 210mm; height: 297mm; display: flex; flex-direction: column; justify-content: space-between; padding: 5mm; }
+            .a5-bill { height: 140mm; border: 2px solid #1e3a8a !important; page-break-inside: avoid; margin: 0 !important; }
+            .order-box { border: 1.5px solid #1e3a8a !important; -webkit-print-color-adjust: exact; }
+            .order-title { background-color: #1e3a8a !important; color: white !important; }
+        }
+        
+        /* Mobile View Adjustments */
+        @media (max-width: 768px) {
+            .a5-bill {
+                transform: scale(0.45);
+                transform-origin: top left;
+                margin-bottom: -75mm !important; /* Prevents large gaps after scaled bill */
+            }
+            .print-wrapper {
+                overflow-x: auto;
+                padding: 10px;
+                display: block;
+            }
+            .panel-input { font-size: 16px !important; } /* Stops iOS auto-zoom on input focus */
+        }
+
+        .a5-bill { width: 200mm; height: 138mm; padding: 4mm 8mm; position: relative; border: 2.5px solid #1e3a8a; background: white; margin: 0 auto 10mm auto; color: #1e3a8a; }
+        .stamp { transform: rotate(-12deg); border: 3px double #b91c1c; color: #b91c1c; font-size: 1.4rem; font-weight: bold; padding: 2px 10px; position: absolute; right: 80px; bottom: 80px; display: none; z-index: 10; opacity: 0.8; }
+        .show-stamp .stamp { display: block; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 1px; table-layout: fixed; }
+        table th, table td { border: 1.5px solid #1e3a8a; text-align: center; height: 21px; font-size: 10px; padding: 1px; }
+        table th { background: #fff; font-weight: bold; }
+
+        .entered-data { color: black !important; font-weight: 500 !important; font-size: 12px !important; }
+        .dotted-line { border-bottom: 1.2px dotted #1e3a8a; min-height: 1.2em; display: inline-block; padding-left: 5px; }
+        .table-title { font-size: 9px; font-weight: bold; text-decoration: underline; margin-top: 2px; font-style: italic; }
+
+        .order-box { border: 1.5px solid #1e3a8a; width: 144px; display: flex; flex-direction: column; background: white; }
+        .order-title { background: #1e3a8a; color: white; text-align: center; font-weight: bold; padding: 2px 0; font-size: 10px; text-transform: uppercase; border-bottom: 1.5px solid #1e3a8a; }
+        .order-row { border-bottom: 1.5px solid #1e3a8a; padding: 1px 6px; font-weight: bold; font-size: 9px; color: #1e3a8a; }
+        .order-row-center { border-bottom: 1.5px solid #1e3a8a; padding: 1px 0; text-align: center; font-weight: bold; font-size: 13px; color: #1e3a8a; }
+        .order-last { padding: 1px 6px; position: relative; min-height: 24px; display: flex; align-items: center; font-weight: bold; font-size: 10px; color: #1e3a8a; }
+        .inv-label-small { font-size: 8px; text-transform: uppercase; font-weight: bold; position: absolute; left: 6px; }
+
+        .panel-label { font-size: 11px; font-weight: 700; color: #1e3a8a; margin-bottom: 2px; display: block; }
+        .panel-input { width: 100%; height: 32px; border: 1px solid #d1d5db; border-radius: 4px; padding: 0 8px; font-size: 13px; outline-color: #1e3a8a; }
+        .panel-input-large { border: 2px solid #1e3a8a; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="no-print max-w-5xl mx-auto bg-white p-4 rounded shadow-lg my-4 border-t-4 border-blue-700">
+        <h2 class="text-lg font-bold mb-4 text-blue-900 underline text-center">Delivery Order Entry Panel</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
+            <div class="col-span-1 md:col-span-3">
+                <label class="panel-label">Customer Name</label>
+                <input list="names" id="custName" oninput="updateAll()" value="ATG CEYLON (PVT) LTD" class="panel-input">
+                <datalist id="names">
+                    <option value="ATG CEYLON (PVT) LTD">
+                    <option value="ATG HAND CARE (PVT) LTD">
+                    <option value="ATG OCCUPATIONAL (PVT) LTD">
+                </datalist>
+            </div>
+            <div class="col-span-1 md:col-span-3">
+                <label class="panel-label">Address</label>
+                <input list="addresses" id="custAddr" oninput="updateAll()" value="Katunayaka" class="panel-input">
+                <datalist id="addresses">
+                    <option value="Katunayaka">
+                    <option value="Nittambuwa">
+                </datalist>
+            </div>
+            <div class="col-span-1 md:col-span-6">
+                <label class="panel-label">Former Name (Main Description)</label>
+                <input type="text" id="formerName" oninput="updateAll()" value="" class="panel-input panel-input-large">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div><label class="panel-label">Purchase Order No</label><input type="text" id="poNo" oninput="updateAll()" class="panel-input"></div>
+            <div><label class="panel-label">RD Number</label><input type="text" id="rdNo" oninput="updateAll()" class="panel-input"></div>
+            <div><label class="panel-label">Order No (Sl. No)</label><input type="text" id="invNo" oninput="updateAll()" value="" class="panel-input"></div>
+            <div><label class="panel-label">Date</label><input type="text" id="invDate" oninput="updateAll()" class="panel-input"></div>
+        </div>
+
+        <div class="bg-blue-50 p-3 rounded-md border border-blue-100 mb-3">
+            <h3 class="text-xs font-bold mb-2 text-blue-800 uppercase">Table Entry</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                <input type="text" id="rowSize" placeholder="Size" class="panel-input">
+                <input type="text" id="rowQty" placeholder="Qty" class="panel-input">
+                <input type="text" id="rowDesc" placeholder="Description" class="panel-input col-span-2 md:col-span-2">
+            </div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button onclick="addRow('moulding')" class="flex-1 bg-blue-700 text-white px-4 py-1.5 rounded text-[11px] font-bold uppercase">Add to Moulding</button>
+                    <button onclick="addRow('return')" class="flex-1 bg-slate-700 text-white px-4 py-1.5 rounded text-[11px] font-bold uppercase">Add to Return</button>
+                </div>
+                <button onclick="location.reload()" class="w-full md:w-auto bg-red-500 text-white px-4 py-1.5 rounded text-[11px] font-bold uppercase">Clear All</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4 items-center">
+            <div class="flex items-center gap-2 border border-red-200 bg-red-50 px-3 py-1.5 rounded w-full md:w-auto justify-center">
+                <input type="checkbox" id="checkStamp" onchange="updateAll()" class="w-5 h-5 cursor-pointer" checked>
+                <label class="text-[11px] font-bold text-red-700 uppercase cursor-pointer">Completed Seal</label>
+            </div>
+            <button onclick="window.print()" class="w-full md:flex-grow bg-green-600 text-white py-2.5 rounded-md font-bold uppercase shadow-md">Print Delivery Order</button>
+        </div>
+    </div>
+
+    <div class="print-wrapper">
+        <div class="a5-bill" id="bill1">
+            <div class="flex justify-between items-start">
+                <div class="text-center w-2/3 ml-12">
+                    <h1 class="text-[28px] font-black leading-none tracking-tighter" style="color: #1e3a8a;">SHEHANI FIBERGLASS WORKS</h1>
+                    <div class="text-[7.5px] font-bold uppercase mt-1 leading-tight">
+                        HAND GLOVE SPECIALIST, ALL CONCRETE MOULDS AND REPAIR WORKS, VEHICAL PLASTIC PARTS, VEHICAL BODY KITS<br>
+                        MANUFACTURE AND REPAIR, FIBERGLASS RAW MATERIAL AND EQUIPMENT SUPPLIERS.
+                    </div>
+                    <p class="text-[9px] font-bold mt-1">TEL : 071 3454944 - 076 7454944</p>
+                </div>
+
+                <div class="order-box">
+                    <div class="order-title">DELIVERY ORDER</div>
+                    <div class="order-row">Purchase Order No: <span class="val-po entered-data"></span></div>
+                    <div class="order-row-center">No: <span class="val-inv entered-data"></span></div>
+                    <div class="order-last">
+                        <span class="inv-label-small">Date:</span>
+                        <div class="w-full text-center"><span class="val-date entered-data text-[13px]"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col mt-1 text-[12px] space-y-0.5">
+                <p class="font-bold flex items-end">Name:<span class="dotted-line flex-grow ml-2 val-cust entered-data"></span>, <span class="val-addr entered-data"></span></p>
+                <p class="font-bold flex items-end">Former Name:<span class="dotted-line flex-grow ml-2 val-former entered-data"></span></p>
+            </div>
+
+            <div class="table-title">Fiberglass Moulding Formers :-</div>
+            <table>
+                <thead>
+                    <tr><th style="width:50px">Size</th><th style="width:50px">Qty.</th><th>Description</th></tr>
+                </thead>
+                <tbody id="mouldingRows" class="entered-data">
+                    <tr><td>06</td><td>0.5</td><td></td></tr>
+                    <tr><td>07</td><td>0.5</td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td></tr>
+                </tbody>
+            </table>
+
+            <div class="table-title">Original Return Formers :-</div>
+            <table>
+                <thead>
+                    <tr><th style="width:50px">Size</th><th style="width:50px">Qty.</th><th>Description</th></tr>
+                </thead>
+                <tbody id="returnRows" class="entered-data">
+                    <tr><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td></tr>
+                    <tr><td>&nbsp;</td><td></td><td></td></tr>
+                </tbody>
+            </table>
+
+            <div class="stamp">COMPLETED</div>
+
+            <div class="absolute bottom-4 left-8 right-8 flex justify-between items-end text-[10px] font-bold text-center">
+                <div class="border-t border-blue-900 w-[28%] pt-1">Delivered By</div>
+                <div class="w-[28%] pb-1">
+                    <span class="val-date entered-data text-[11px] text-center block w-full"></span>
+                    <div class="border-t border-blue-900 pt-1">Issue Date</div>
+                </div>
+                <div class="border-t border-blue-900 w-[28%] pt-1">Received By</div>
+            </div>
+        </div>
+        
+        <div id="bill2-container"></div>
+    </div>
+
+    <script>
+        let counts = { moulding: 2, return: 2 };
+        
+        function updateAll() {
+            const vals = {
+                cust: document.getElementById('custName').value,
+                addr: document.getElementById('custAddr').value,
+                former: document.getElementById('formerName').value,
+                po: document.getElementById('poNo').value,
+                inv: document.getElementById('invNo').value,
+                date: document.getElementById('invDate').value
+            };
+            Object.keys(vals).forEach(key => {
+                document.querySelectorAll('.val-' + key).forEach(el => el.innerText = vals[key]);
+            });
+            const isStamped = document.getElementById('checkStamp').checked;
+            document.querySelectorAll('.a5-bill').forEach(bill => {
+                isStamped ? bill.classList.add('show-stamp') : bill.classList.remove('show-stamp');
+            });
+            document.getElementById('bill2-container').innerHTML = document.getElementById('bill1').outerHTML;
+        }
+
+        function addRow(type) {
+            const tableId = type === 'moulding' ? 'mouldingRows' : 'returnRows';
+            const rows = document.querySelectorAll(`#bill1 #${tableId} tr`);
+            const max = type === 'moulding' ? 6 : 3;
+            if (counts[type] >= max) return;
+            const target = rows[counts[type]].cells;
+            target[0].innerText = document.getElementById('rowSize').value;
+            target[1].innerText = document.getElementById('rowQty').value;
+            target[2].innerText = document.getElementById('rowDesc').value || document.getElementById('formerName').value;
+            counts[type]++;
+            updateAll();
+            ['rowSize', 'rowQty', 'rowDesc'].forEach(id => document.getElementById(id).value = '');
+        }
+        
+        window.onload = updateAll;
+    </script>
+</body>
+</html>
